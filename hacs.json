@@ -1,7 +1,6 @@
 {
-  "name": "WRAL Weather: Current Observations and 5-day Forecast ",
+  "name": "WRAL Weather Current Observations and 5-day Forecast ",
   "country": "US",
   "domains": ["weather"],
-  "iot_class": "Cloud Polling",
-  "render_readme": true
+  "iot_class": "Cloud Polling"
 }
