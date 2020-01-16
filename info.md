@@ -1,6 +1,6 @@
-# wral weather
+# WRAL Weather
 
-Custom component for WRAL Weather for ome Assistant.
+Custom component for WRAL Weather for Home Assistant.
 
 ## Sample configuration
 ```
@@ -25,5 +25,7 @@ cards:
 ```
 It also works with the custom wral-weather-card
 which can be found here:
-Add link
+
+TO BE DONE Add link
+
 
