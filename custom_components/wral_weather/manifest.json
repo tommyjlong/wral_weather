@@ -1,5 +1,5 @@
 {
-    "domain": "weather",
+    "domain": "wral_weather",
     "name": "WRAL Weather",
     "documentation": "https://github.com/tommyjlong/wral-weather/blob/master/README.md",
     "dependencies": [],
