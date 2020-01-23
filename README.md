@@ -57,4 +57,4 @@ The code is made up of two separate Python modules:
 - ```wral_weather.py``` : which interfaces directly with WRAL's weather website.
 - ```weather.py``` : which provides the WRAL platform for HA's weather integration.  It gets its data from ```wral_weather.py```.
 
-A companion Python application program ```app_wral.py``` was developed as a development and test vehicle for the ```wral_weather.py```.  If you would like to play with it, simply place it in the same directory as the other two Python modules and run it: ```$python3 app_wral.py```.
+A companion Python application program ```app_wral.py``` was developed as a test and development vehicle for the ```wral_weather.py```.  If you would like to play with it, simply place it and the ```wral_weather.py``` in the same directory and run it: ```$python3 app_wral.py```.
