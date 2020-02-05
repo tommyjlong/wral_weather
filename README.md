@@ -30,9 +30,6 @@ weather:
 * ```name``` is optional.  It is used as the name of the entity as well as the Friendly name.  By default the name is "WRAL Weather".
 Using the default name, the entity will show up as: ```weather.wral_weather```
 * ```zipcode``` is optional.  However it is highly recommended to use your zipcode.  By default, it uses the zipcode where the WRAL TV studio is located.
-## Change log
-* 0.1.0
-  * Initial Release
 
 ## Lovelace Support
 This custom weather platform works with standard HA weather-forecast card:
