@@ -7,10 +7,6 @@ zipcode in the greater Raleigh-Durham-Chapel Hill, NC (USA) viewing area.
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
 
-### :warning: Some Data Unknowns
-The data is collected from WRAL.com's web page, and not all data enumerations are known as this information is not published.
-Over time, as new enumerations are learned, this application will be updated.
-
 ## Installation
 This custom component can be installed using the Home Assistant Community Store (HACS) or installed manually.
 ### HACS Installation

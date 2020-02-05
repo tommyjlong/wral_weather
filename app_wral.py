@@ -24,36 +24,44 @@ _LOGGER.setLevel(logging.NOTSET)
 
 # The following dictionary is needed for HA
 WRAL_CONDITION_CLASSES = {
-      "exceptional": [],
-      "snowy": [],
-      "snowy-rainy": [],
+      "exceptional": ["very-cold", "very-hot", "freezing",
+                      "frost", "humid", "smoke"],
+      "snowy": ["snow", "day-chance-snow", "night-chance-snow",
+                "snow-sleet", "day-chance-snow-sleet",
+                "night-chance-snow-sleet"],
+      "snowy-rainy": ["day-chance-sleet", "night-chance-sleet",
+                      "day-chance-snow-and-sleet",
+                      "night-chance-snow-and-sleet",
+                      "rain-snow", "day-chance-rain-and-snow",
+                      "night-chance-rain-and-snow",
+                      "rain-sleet", "day-chance-rain-and-sleet",
+                      "night-chance-rain-and-sleet", "sleet",
+                      "freezing-rain", "day-chance-freezing-rain",
+                      "night-chance-freezing-rain"],
       "hail": [],
-      "lightning-rainy": ["thunderstorms-rain"],
-      "lightning": [],
+      "lightning-rainy": ["thunderstorms-rain",
+                          "day-chance-rain-and-tstorms",
+                          "night-chance-rain-and-tstorms"],
+      "lightning": ["thunderstorm", "day-chance-tstorm",
+                    "night-chance-tstorm"],
       "pouring": [],
-      "rainy": ["rain", "rain-showers", "day-chance-rain",
-                "night-chance-rain"],
+      "rainy": ["rain", "day-chance-rain", "night-chance-rain",
+                "rain-showers", "day-chance-rain-showers",
+                "night-chance-rain-showers",
+                "drizzle", "day-chance-drizzle", "night-chance-drizzle"],
       "windy-variant": [],
-      "windy": [],
-      "fog": ["mist-fog", "misc-fog"],
-      "clear": ["day-clear", "night-clear"],
-      "cloudy": ["cloudy", "day-mostly-cloudy", "night-mostly-cloudy",
-                 "overcast"],
+      "windy": ["windy"],
+      "fog": ["misc-fog"],
+      "clear": ["day-clear", "night-clear",
+                "day-dry", "night-dry"],
+      "cloudy": ["cloudy", "day-mostly-cloudy", "night-mostly-cloudy"],
       "partlycloudy": ["day-mostly-clear", "night-mostly-clear",
-                       "day-partly-cloudy", "night-partly-cloudy"],
+                       "day-partly-cloudy", "night-partly-cloudy"
+                       "day-haze", "night-haze",
+                       "day-dust", "night-dust"],
     }
 
 
-# day-clear
-# night-clear
-# day-mostly-clear
-# day-partly-cloudy
-# day-mostly-cloudy
-# cloudy
-# drizzle
-# day-chance-rain
-# rain-showers
-# misc-fog
 def wral2ha_condition(wral_cond):
     """
     Convert WRAL Condition (current or forecast) to
@@ -112,19 +120,26 @@ async def main():
         curr_data = await wral.update_observation()
 
         curr_cond = wral.curr_dict["current_conditions"]
-        print('Current Conditions', wral.curr_dict["current_conditions"])
+        print('Current WRAL Conditions:   ',
+              wral.curr_dict["current_conditions"])
         curr_ha_cond = wral2ha_condition(curr_cond)
-        print('Current HA Conditions ', curr_ha_cond)
-        print('Current Temp', wral.curr_dict["current_temperature"])
-        print('Current Dew Point', wral.curr_dict["current_dew_point"])
-        print('Current Relative Humidity',
+        print('Current HA Conditions:     ', curr_ha_cond)
+        print('Current Temperature:       ',
+              wral.curr_dict["current_temperature"])
+        print('Current Dew Point:         ',
+              wral.curr_dict["current_dew_point"])
+        print('Current Relative Humidity: ',
               wral.curr_dict["current_relative_humidity"])
-        print('Current Wind Direction',
+        print('Current Wind Direction:    ',
               wral.curr_dict["current_wind_direction"])
-        print('Current Wind Speed', wral.curr_dict["current_wind_speed"])
-        print('Current Wind Bearing', wral.curr_dict["current_wind_bearing"])
-        print('Current Wind Chill', wral.curr_dict["current_wind_chill"])
-        print('Current Pressure', wral.curr_dict["current_pressure"])
+        print('Current Wind Speed:        ',
+              wral.curr_dict["current_wind_speed"])
+        print('Current Wind Bearing:      ',
+              wral.curr_dict["current_wind_bearing"])
+        print('Current Wind Chill:        ',
+              wral.curr_dict["current_wind_chill"])
+        print('Current Pressure:          ',
+              wral.curr_dict["current_pressure"])
         _LOGGER.debug("Current Dictionary: %s", wral.curr_dict)
         print('')
 
