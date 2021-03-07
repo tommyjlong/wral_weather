@@ -1,6 +1,7 @@
 {
     "domain": "wral_weather",
     "name": "WRAL Weather",
+    "version": "0.1.2",
     "documentation": "https://github.com/tommyjlong/wral-weather/blob/master/README.md",
     "dependencies": [],
     "codeowners": ["@tommyjlong"],
