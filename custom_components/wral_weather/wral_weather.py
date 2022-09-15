@@ -77,9 +77,9 @@ DEFAULT_ZIPCODE = '27606'
 
 # URLS used and other URLs of interest:
 #
-# FULL CURRENT: "https://www.wral.com/weather_current_conditions/13264720/
+# FULL CURRENT: "https://legacy.wral.com/weather_current_conditions/13264720/
 #                 ?location=ZIPCODE&action=update_location"
-# FULL FORECAST: "https://www.wral.com/weather/
+# FULL FORECAST: "https://legacy.wral.com/weather/
 #                 ?location=ZIPCODE&action=update_location",
 # TEST URLS:
 #   "current_pre": "https://www.wral.com/test_for_failure",
@@ -87,9 +87,9 @@ DEFAULT_ZIPCODE = '27606'
 #   "forecast_pre": "https://www.wral.com/test_for_failure",
 #   "forecast_pre": "https://www.test_for_failure.com",
 URLS = {
-    "forecast_pre": "https://www.wral.com/weather/?location=",
+    "forecast_pre": "https://legacy.wral.com/weather/?location=",
     "forecast_post": "&action=update_location",
-    "current_pre": "https://www.wral.com/\
+    "current_pre": "https://legacy.wral.com/\
                     weather_current_conditions/13264720/?location=",
     "current_post": "&action=update_location"
 }
