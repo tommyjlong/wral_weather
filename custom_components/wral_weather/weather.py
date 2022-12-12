@@ -166,7 +166,7 @@ class WRAL_Weather(WeatherEntity):
             self.wral_name = "WRAL Weather"
         else:
             self.wral_name = config.get(CONF_NAME)
-        self.is_metric = units.is_metric
+       #self.is_metric = units.is_metric
         self.mode = mode
 
         self._wral_forecast = None
