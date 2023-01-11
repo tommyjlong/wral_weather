@@ -12,16 +12,19 @@ from homeassistant.components.weather import (
     WeatherEntity,
     PLATFORM_SCHEMA,
     ATTR_FORECAST_CONDITION,
-    ATTR_FORECAST_TEMP,
+    ATTR_FORECAST_NATIVE_TEMP,
     ATTR_FORECAST_TIME,
-    ATTR_FORECAST_WIND_SPEED,
+    ATTR_FORECAST_NATIVE_WIND_SPEED,
     ATTR_FORECAST_WIND_BEARING,
-    ATTR_FORECAST_TEMP_LOW,
+    ATTR_FORECAST_NATIVE_TEMP_LOW,
 )
 from homeassistant.const import (
     CONF_NAME,
     CONF_MODE,
-    TEMP_FAHRENHEIT,
+    UnitOfLength,
+    UnitOfPressure,
+    UnitOfSpeed,
+    UnitOfTemperature,
 )
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -204,7 +207,7 @@ class WRAL_Weather(WeatherEntity):
         return self.wral_name
 
     @property
-    def temperature(self):
+    def native_temperature(self):
         """Return the current temperature."""
         if self.wral.curr_dict:
             wral_curr_temp = self.wral.curr_dict.get("current_temperature")
@@ -214,7 +217,12 @@ class WRAL_Weather(WeatherEntity):
             return None
 
     @property
-    def pressure(self):
+    def native_temperature_unit(self):
+        """Return the current temperature unit."""
+        return UnitOfTemperature.FAHRENHEIT
+
+    @property
+    def native_pressure(self):
         """Return the current pressure."""
         if self.wral.curr_dict:
             wral_curr_press = self.wral.curr_dict.get("current_pressure")
@@ -222,6 +230,11 @@ class WRAL_Weather(WeatherEntity):
             return wral_curr_press
         else:
             return None
+
+    @property
+    def native_pressure_unit(self):
+        """Return the current pressure unit."""
+        return UnitOfPressure.INHG
 
     @property
     def humidity(self):
@@ -235,7 +248,7 @@ class WRAL_Weather(WeatherEntity):
             return None
 
     @property
-    def wind_speed(self):
+    def native_wind_speed(self):
         """Return the current wind speed."""
         if self.wral.curr_dict:
             wral_curr_ws = self.wral.curr_dict.get("current_wind_speed")
@@ -243,6 +256,11 @@ class WRAL_Weather(WeatherEntity):
             return round(wral_curr_ws)
         else:
             return None
+
+    @property
+    def native_wind_speed_unit(self):
+        """Return the current windspeed."""
+        return UnitOfSpeed.MILES_PER_HOUR
 
     @property
     def wind_bearing(self):
@@ -253,11 +271,6 @@ class WRAL_Weather(WeatherEntity):
             return wral_curr_wb
         else:
             return None
-
-    @property
-    def temperature_unit(self):
-        """Return the unit of measurement."""
-        return TEMP_FAHRENHEIT
 
     @property
     def condition(self):
@@ -272,9 +285,14 @@ class WRAL_Weather(WeatherEntity):
             return None
 
     @property
-    def visibility(self):
-        """Return visibility(Not supported by WRAL)."""
+    def native_visibility(self):
+        """Return visibility (Not supported by WRAL)."""
         return None
+
+    @property
+    def native_visibility_unit(self):
+        """Return visibility unit."""
+        return UnitOfLength.MILES
 
     @property
     def forecast(self):
@@ -289,13 +307,13 @@ class WRAL_Weather(WeatherEntity):
                 ATTR_FORECAST_DETAIL_DESCRIPTION: wral_forecast_entry.get(
                     "detailed_description"
                 ),
-                ATTR_FORECAST_TEMP:
+                ATTR_FORECAST_NATIVE_TEMP:
                     wral_forecast_entry.get("high_temperature"),
-                ATTR_FORECAST_TEMP_LOW:
+                ATTR_FORECAST_NATIVE_TEMP_LOW:
                     wral_forecast_entry.get("low_temperature"),
                 ATTR_FORECAST_WIND_BEARING:
                     wral_forecast_entry.get("wind_bearing"),
-                ATTR_FORECAST_WIND_SPEED:
+                ATTR_FORECAST_NATIVE_WIND_SPEED:
                     wral_forecast_entry.get("wind_speed"),
                 ATTR_FORECAST_PRECIP_PROB:
                     wral_forecast_entry.get("precipitation"),
