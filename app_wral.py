@@ -18,9 +18,9 @@ formatter = \
     logging.Formatter('%(levelname)s %(asctime)s %(filename)s - %(message)s')
 handler1 = logging.StreamHandler(sys.stdout)
 handler1.setFormatter(formatter)
-handler1.setLevel(logging.NOTSET)
+handler1.setLevel(logging.DEBUG)
 _LOGGER.addHandler(handler1)
-_LOGGER.setLevel(logging.NOTSET)
+_LOGGER.setLevel(logging.DEBUG)
 
 # The following dictionary is needed for HA
 WRAL_CONDITION_CLASSES = {
@@ -75,7 +75,7 @@ def wral2ha_condition(wral_cond):
         time = "night"
     else:
         time = "day"
-    _LOGGER.debug("Time: %s", time)
+    _LOGGER.debug("Icon Day or Night: %s", time)
     cond = key
     if cond == "clear":
         if time == "day":
@@ -117,11 +117,13 @@ def forecast_day2iso(day, offset_from_today):
 async def main():
     async with aiohttp.ClientSession() as client:
         wral = WralWeather(client, zipcode=ZIPCODE)
-        curr_data = await wral.update_observation()
+        results = await wral.update_observation_and_forecast()
 
-        curr_cond = wral.curr_dict["current_conditions"]
+        curr_cond = wral.curr_dict["current_icon_conditions"]
         print('Current WRAL Conditions:   ',
               wral.curr_dict["current_conditions"])
+        print('Current WRAL Conditions:   ',
+              wral.curr_dict["current_icon_conditions"])
         curr_ha_cond = wral2ha_condition(curr_cond)
         print('Current HA Conditions:     ', curr_ha_cond)
         print('Current Temperature:       ',
@@ -138,15 +140,15 @@ async def main():
               wral.curr_dict["current_wind_bearing"])
         print('Current Wind Chill:        ',
               wral.curr_dict["current_wind_chill"])
+        print('Current Heat Index:        ',
+              wral.curr_dict["current_heat_index"])
         print('Current Pressure:          ',
               wral.curr_dict["current_pressure"])
+        print('Current Visibility:        ',
+              wral.curr_dict["current_visibility"])
         _LOGGER.debug("Current Dictionary: %s", wral.curr_dict)
         print('')
 
-        # Dont create another session object,
-        #   as one object is a connection pool.
-        # async with aiohttp.ClientSession() as client2:
-        forecast_data = await wral.update_forecast()
         i = 0
         for todays_forecast in wral.forecast_list:
             _LOGGER.debug("Today's Forecast %s ", todays_forecast)
@@ -156,9 +158,11 @@ async def main():
             _LOGGER.debug("Day %i Which ISO Day %s ", i, iso_day)
             print("Day  ", i, "  Condition      ",
                   todays_forecast["condition"])
-            forecast_cond = todays_forecast["condition"]
+            print("Day  ", i, "  Icon Condition ",
+                  todays_forecast["icon_condition"])
+            forecast_cond = todays_forecast["icon_condition"]
             forecast_ha_cond = wral2ha_condition(forecast_cond)
-            print("Day  ", i, "  HA Conditions  ", forecast_ha_cond)
+            print("Day  ", i, "  HA Condition   ", forecast_ha_cond)
             print("Day  ", i, "  High Temp      ",
                   todays_forecast["high_temperature"])
             print("Day  ", i, "  Low Temp       ",

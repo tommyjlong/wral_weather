@@ -1,11 +1,16 @@
 """Weather component that handles meteorological data from WRAL TV."""
 import logging
 import aiohttp
+import datetime
 
 ERRORS = (aiohttp.ClientError)
 _LOGGER = logging.getLogger(__name__)
 
 
+#  The following is a left over from the web page screen scraping.
+#  Icons are still specified by legacy url and this search technique
+#   can still be used for these urls.
+#
 #  Strings to search on to get particular weather data items
 #    The first string gets you to a unique section within
 #    the HTML page for the item of interest.
@@ -17,26 +22,11 @@ _LOGGER = logging.getLogger(__name__)
 #    field for the item of interest
 #
 CURRENT_WEATHER_SEARCH_STRINGS = {
-    'conditions': ["/images\\/wx\\", 'weather-', '.svg'],
-    'temperature': ['>Temperature<\\/h3>', '>', '&'],
-    'dew_point': ['>Dew Point<\\/h3>', '>', '&'],
-    'rel_humidity': ['>Relative Humidity<\\/h3>', '>', '%'],
-    'wind': ['>Wind<\\/h3>', '>', '<'],
-    'wind_chill': ['>Wind Chill<\\/h3>', '>', '&'],
-    'pressure': ['>Pressure<\\/h3>', '>', '<']
+    'conditions': ["/images/wx", 'weather-', '.png'],
     }
 
 FORECAST_DAY_SEARCH_STRINGS = {
-    'which_day': ['<h4 class=\\"h-6 w-one time\\"', '>', '<'],
     'conditions': ['inline-svg', 'weather-', '.svg'],
-    'high_temp': ['<div class=\\"temperature\\">', '\\"high\\">', '<'],
-    'low_temp': ['<div class=\\"temperature\\">', '\\"low\\">', '<'],
-    'detailed_day': ['"detailed-item day', '>', '<'],
-    'detailed_night': ['"detailed-item night', '>', '<'],
-    'sunrise': ['>Sunrise<\\/h6>', '>', '<'],
-    'sunset': ['>Sunset<\\/h6>', '>', '<'],
-    'precip': ['>Precip<\\/h6>', '>', '<'],
-    'wind': ['>Wind<\\/h6>', '>', '<'],
     }
 #
 # Setup a dictionary lookup to translate wind directions
@@ -61,40 +51,48 @@ wind_direction2degrees = {
     'North Northwest': 338,
     }
 
-# List of discovered conditions found thus far from web page
-#   day-clear
-#   day-mostly-clear  night-mostly-clear
-#   day-partly-cloudy night-partly-cloudy
-#   day-mostly-cloudy night-mostly-cloudy
-#   cloudy
-#   drizzle
-#   rain-showers
-#   thunderstorms-rain
-#   misc-fog
+#
+# Setup a Ordered List of 16 Wind Directions
+#   starting with North (0 degrees)
+#   and continuing every 22.5 degrees.
+#   Add one more North at the end to handle "next one".
+wind_directions = (
+    'North',
+    'North Northeast',
+    'Northeast',
+    'East Northeast',
+    'East',
+    'East Southeast',
+    'Southeast',
+    'South Southeast',
+    'South',
+    'South Southwest',
+    'Southwest',
+    'West Southwest',
+    'West',
+    'West Northwest',
+    'Northwest',
+    'North Northwest',
+    'North'
+    )
 
 NUM_FORECAST_DAYS = 7
 DEFAULT_ZIPCODE = '27606'
+DEFAULT_CITYID = 8111
 
-# URLS used and other URLs of interest:
-#
-# FULL CURRENT: "https://legacy.wral.com/weather_current_conditions/13264720/
-#                 ?location=ZIPCODE&action=update_location"
-# FULL FORECAST: "https://legacy.wral.com/weather/
-#                 ?location=ZIPCODE&action=update_location",
-# TEST URLS:
-#   "current_pre": "https://www.wral.com/test_for_failure",
-#   "current_pre": "https://www.test_for_failure",
-#   "forecast_pre": "https://www.wral.com/test_for_failure",
-#   "forecast_pre": "https://www.test_for_failure.com",
+# URLS used 
+#   "city_search" is used to search for a city id based 
+#      on zipcode (or city name)k
+#   "weather_pre" gets current and forecast weather data
+#     for the given city id
 URLS = {
-    "forecast_pre": "https://legacy.wral.com/weather/?location=",
-    "forecast_post": "&action=update_location",
-    "current_pre": "https://legacy.wral.com/\
-                    weather_current_conditions/13264720/?location=",
-    "current_post": "&action=update_location"
+    "city_search_pre" : "https://webapi.wral.com/api/city/search?query=",
+    "weather_pre" : "https://webapi.wral.com/api/weather?city=",
 }
 
-
+# The following is a left over from the web page screen scraping.
+# Icons are still specified by legacy url and this search function
+#   can still be used to find the icon name from these urls.
 def search_for_item(scope_start, scope_end, category_search_string,
                     item_start_string, item_end_string, data, iterations=1):
     """
@@ -137,234 +135,151 @@ def search_for_item(scope_start, scope_end, category_search_string,
                 return None
     return item_value
 
-
-def split_wind_info(curr_wind):
+def wind_degrees2direction(degrees):
     """
-    Split the wind information into speed, direction and bearing
-    Wind string is something like:
-      Calm
-      North Northeast 11 mph
-      Northeast 11 mph
+    Compute the direction of the wind ex. 'North','East", etc.
+    from degrees where 'North' is 0 degrees.
     """
-    speed = None
-    direction = None
-    bearing = None
+    quadrant = int(degrees/22.5)
+    if (degrees % 22.5 > 11.25):
+        quadrant = quadrant +1
+    return wind_directions[quadrant] 
 
-    wind_info = curr_wind.split(' ')
-    word_count = len(wind_info)
-
-    if word_count == 0:
-        return speed, direction
-    if (wind_info[0]) == "Calm":
-        speed = 0
-        return speed, direction, bearing
-    if wind_info[word_count-2].isdigit:
-        speed = int(wind_info[word_count - 2])
-    if word_count == 4:
-        direction = wind_info[0] + " " + wind_info[1]
-    else:
-        direction = wind_info[0]
-
-    bearing = wind_direction2degrees[direction]
-
-    return (speed, direction, bearing)
-
-
-def clean_up_numeric(string2number):
+def parse_current_conditions(curr_json):
     """
-    Assuming the string has only one number (integer or float, or negative)
-    remove any other and extraneous characters from the string.
-    Ex. sometimes results are ' 38&deg etc'
-    """
-    if string2number is not None:
-        string2number = ''.join((ch if ch in '-0123456789.' else '')
-                                for ch in string2number)
-        string2number = string2number.strip()
-        if string2number == '.' or string2number == '-' or string2number == '':
-            return None
-        if '.' in string2number:
-            string2number = float(string2number)
-        else:
-            string2number = int(string2number)
-
-    return string2number
-
-
-def parse_current_conditions(curr_data):
-    """
-    Search and Parse the Current Conditions web page for
-    the current condition items of interest.
-    The Current Condtion web page will contain data from both a given zip code
-    and from the WRAL studio.  This routine only gets the former.
+    Get the Current Conditions from the 
+      'currentObservations' JSON data.
+      Note: some of the numbers are strings, so need to convert.
     """
     curr_dict = {}
+
+    # Get Current Conditions
+    #  JSON data contains both a current Conditions string,
+    #  and current conditons icon (which appears to be the same
+    #  same as Legacy) which can also provide 'night' 'day' differentials.
+    #  The legacy icon uses a URL that has a string nearly identical
+    #  to the old way of parsing, so we'll use the old way 
+    #  of parsing to find the name of this icon.
+    curr_dict["current_conditions"] = curr_json['skyCondition']
     cwss = CURRENT_WEATHER_SEARCH_STRINGS
-    curr_conditions = search_for_item(0, None, cwss['conditions'][0],
+    curr_icon = curr_json['icon']
+    curr_icon_condition = search_for_item(0, None, cwss['conditions'][0],
                                       cwss['conditions'][1],
                                       cwss['conditions'][2],
-                                      curr_data)
-    curr_dict["current_conditions"] = curr_conditions
+                                      curr_icon)
+    curr_dict["current_icon_conditions"]= curr_icon_condition
 
     # Get the Current Temperature
-    curr_temp = search_for_item(0,
-                                None,
-                                cwss['temperature'][0],
-                                cwss['temperature'][1],
-                                cwss['temperature'][2],
-                                curr_data)
-    curr_temp = clean_up_numeric(curr_temp)
-    curr_dict["current_temperature"] = curr_temp
+    curr_dict["current_temperature"] = int(curr_json['temperature'])
 
     # Get the Current Dew Point Temperature
-    curr_dew_point = search_for_item(0,
-                                     None,
-                                     cwss['dew_point'][0],
-                                     cwss['dew_point'][1],
-                                     cwss['dew_point'][2],
-                                     curr_data)
-    curr_dew_point = clean_up_numeric(curr_dew_point)
-    curr_dict["current_dew_point"] = curr_dew_point
+    curr_dict["current_dew_point"] = int(curr_json['dewPoint'])
 
     # Get the Current Humidity
-    curr_rel_humidity = search_for_item(0,
-                                        None,
-                                        cwss['rel_humidity'][0],
-                                        cwss['rel_humidity'][1],
-                                        cwss['rel_humidity'][2],
-                                        curr_data)
-    curr_rel_humidity = clean_up_numeric(curr_rel_humidity)
-    curr_dict["current_relative_humidity"] = curr_rel_humidity
+    curr_dict["current_relative_humidity"] = curr_json['relativeHumidity']
 
     # Get the Current Wind Speed and Direction
-    curr_wind = search_for_item(0,
-                                None,
-                                cwss['wind'][0],
-                                cwss['wind'][1],
-                                cwss['wind'][2],
-                                curr_data)
-    curr_wind_speed, curr_wind_direction, curr_wind_bearing = \
-        split_wind_info(curr_wind)
-    curr_dict["current_wind_speed"] = curr_wind_speed
-    curr_dict["current_wind_direction"] = curr_wind_direction
-    curr_dict["current_wind_bearing"] = curr_wind_bearing
+    #   New API does not provide wind direction string
+    #   so we'll compute one.
+    #  Note: 'windDirection' is in degrees but can be None.
+    curr_dict['current_wind_speed'] =  int(curr_json['windSpeed'])
+    curr_dict['current_wind_direction'] = None
+    wind_dir = curr_json['windDirection']
+    if ( wind_dir != None):
+        wind_dir =  int(wind_dir)
+        curr_dict['current_wind_direction'] =  \
+                 wind_degrees2direction(wind_dir)
+    curr_dict['current_wind_bearing'] = wind_dir
 
-    # Get the Current Wind Chill.
-    # Note: This is sometimes absent when wind speed is low.
-    curr_wind_chill = search_for_item(0,
-                                      None,
-                                      cwss['wind_chill'][0],
-                                      cwss['wind_chill'][1],
-                                      cwss['wind_chill'][2],
-                                      curr_data)
-    curr_wind_chill = clean_up_numeric(curr_wind_chill)
-    curr_dict["current_wind_chill"] = curr_wind_chill
+    # Get the Current Wind Chill/Heat Index. 
+    #  Note: Could possibly be empty string
+    wc = curr_json['windChill']
+    if ( wc.isnumeric() ):
+        curr_dict["current_wind_chill"] = int(wc)
+    else:
+        curr_dict["current_wind_chill"] = None
+    hi = curr_json['heatIndex']
+    if ( hi.isnumeric() ):
+        curr_dict["current_heat_index"] = int(hi)
+    else:
+        curr_dict["current_heat_index"] = None
 
     # Get the Current Pressure
-    curr_pressure = search_for_item(0,
-                                    None,
-                                    cwss['pressure'][0],
-                                    cwss['pressure'][1],
-                                    cwss['pressure'][2],
-                                    curr_data)
-    curr_pressure = clean_up_numeric(curr_pressure)
-    curr_dict["current_pressure"] = curr_pressure
+    curr_dict["current_pressure"] = float(curr_json['pressure'])
+
+    # Get the Current visibility
+    curr_dict["current_visibility"] = float(curr_json['visibility'])
 
     return curr_dict
 
 
 def parse_forecast(forecast_day_data):
     """
-    Search and Parse the 7 Day Forecast web page.
+    Get the 7 Day Forecast from the 
+      'forecastDetails' JSON data list of days.
+      Note: there is also "hours" data for the next
+        7 days or so, but this data is ignored
     """
 
     fdss = FORECAST_DAY_SEARCH_STRINGS
     day_dict = {}
     forecast_list = []
 
-    data = forecast_day_data
-    scope_start = 0
     iterations = NUM_FORECAST_DAYS
-    start_search = scope_start
 
-    start_day = '<li class=\\"weather-row'  # escape
-    end_day = start_day
+    cwss = CURRENT_WEATHER_SEARCH_STRINGS
 
     for i in range(0, iterations):
-        offset = data[start_search:].find(start_day)
-        if offset == -1:
-            _LOGGER.debug("Can not find start of given day")
-            break
-        else:
-            day_start = offset + start_search
-            cat_start = day_start
-        day_end = data[day_start+len(start_day):].find(end_day)
-        if day_end == -1:
-            _LOGGER.debug("Can not find end of given day")
-        else:
-            day_end = day_end + len(end_day) + day_start
-
-        start_search = day_end - 3
-        cat_end = None
+        forecast_dayN_data = forecast_day_data['forecastDetails'][i]
+        _LOGGER.debug("========Forecast Day %i Details======== ", i)
+        _LOGGER.debug("%s", forecast_dayN_data)
+        _LOGGER.debug("")
 
         # re-init data_dict to empty.
         # Otherwise the append to forecast will mess up
         day_dict = {}
+        day_timestamp = forecast_dayN_data['forecastDate']['timestamp']
+        dt_object = datetime.datetime.fromtimestamp(day_timestamp)
+        day_dict["which_day"] = dt_object.strftime("%a")
 
-        # Find day N by name (3 chars)
-        result = search_for_item(cat_start,
-                                 cat_end,
-                                 fdss['which_day'][0],
-                                 fdss['which_day'][1],
-                                 fdss['which_day'][2],
-                                 forecast_day_data, 1)
-        day_dict["which_day"] = result
 
-        # Find forecast condition for day N. Ex. clear-night
-        result = search_for_item(cat_start,
-                                 cat_end,
-                                 fdss['conditions'][0],
-                                 fdss['conditions'][1],
-                                 fdss['conditions'][2],
-                                 forecast_day_data, 1)
-        day_dict["condition"] = result
+        # Find forecast Condition for day N. Ex. clear-night
+        #   JSON data contains both a Forecast conditions string,
+        #   and Forecast conditons icon (which appears to be the same
+        #   same as Legacy).
+        #   The legacy icon uses a URL that has a string nearly identical
+        #   to the old way of parsing, so we'll use the old way
+        #   of parsing to find the name of this icon.
+        # Note: I find from time to time that parameters
+        #   that should contain a string numeric value are sometimes empty string
+        #   for example forecast low temperature.
+        day_day_icon = forecast_dayN_data['dayIcon']
+        day_icon_condition = search_for_item(0, None, cwss['conditions'][0],
+                                      cwss['conditions'][1],
+                                      cwss['conditions'][2],
+                                      day_day_icon)
+        day_dict["icon_condition"]= day_icon_condition
+        day_dict["condition"] = forecast_dayN_data['dayCondition']
 
         # Find forecast high temperature for day N.
-        # Note: at current night this is not made available
-        result = search_for_item(cat_start,
-                                 cat_end,
-                                 fdss['high_temp'][0],
-                                 fdss['high_temp'][1],
-                                 fdss['high_temp'][2],
-                                 forecast_day_data, 1)
-        result = clean_up_numeric(result)
-        day_dict["high_temperature"] = result
+        temp_data = forecast_dayN_data['high']
+        if ( temp_data.isnumeric() ):
+            day_dict["high_temperature"] = int(temp_data)
+        else:
+            day_dict["high_temperature"] = 0
 
         # Find forecast low temperature for day N.
-        result = search_for_item(cat_start,
-                                 cat_end, fdss['low_temp'][0],
-                                 fdss['low_temp'][1],
-                                 fdss['low_temp'][2],
-                                 forecast_day_data, 1)
-        result = clean_up_numeric(result)
-        day_dict["low_temperature"] = result
+        temp_data = forecast_dayN_data['low']
+        if ( temp_data.isnumeric() ):
+            day_dict["low_temperature"] = int(temp_data)
+        else:
+            day_dict["low_temperature"] = 0
 
         # Find forecast day descriptions for day N.
-        result = search_for_item(cat_start,
-                                 cat_end,
-                                 fdss['detailed_day'][0],
-                                 fdss['detailed_day'][1],
-                                 fdss['detailed_day'][2],
-                                 forecast_day_data, 1)
-        day_dict["detailed_day"] = result
+        day_dict["detailed_day"] = forecast_dayN_data['textDay']
 
         # Find forecast night descriptions for day N.
-        result = search_for_item(cat_start,
-                                 cat_end,
-                                 fdss['detailed_night'][0],
-                                 fdss['detailed_night'][1],
-                                 fdss['detailed_night'][2],
-                                 forecast_day_data, 1)
-        day_dict["detailed_night"] = result
+        day_dict["detailed_night"] = forecast_dayN_data['textNight']
 
         # Combine forecast day and night descriptions for day N into one.
         day_dict["detailed_description"] = \
@@ -374,46 +289,25 @@ def parse_forecast(forecast_day_data):
         del day_dict["detailed_night"]
 
         # Find forecast Sunrise for day N.
-        result = search_for_item(cat_start,
-                                 cat_end,
-                                 fdss['sunrise'][0],
-                                 fdss['sunrise'][1],
-                                 fdss['sunrise'][2],
-                                 forecast_day_data, 1)
-        day_dict["sunrise"] = result
+        day_dict["sunrise"] = forecast_dayN_data['sunrise']['string']
 
         # Find forecast Sunset for day N.
-        result = search_for_item(cat_start,
-                                 cat_end,
-                                 fdss['sunset'][0],
-                                 fdss['sunset'][1],
-                                 fdss['sunset'][2],
-                                 forecast_day_data, 1)
-        day_dict["sunset"] = result
+        day_dict["sunset"] = forecast_dayN_data['sunset']['string']
 
         # Find forecast precipitation probability for day N.
-        result = search_for_item(cat_start,
-                                 cat_end,
-                                 fdss['precip'][0],
-                                 fdss['precip'][1],
-                                 fdss['precip'][2],
-                                 forecast_day_data, 1)
-        result = clean_up_numeric(result)
-        day_dict["precipitation"] = result
+        day_dict["precipitation"] = int(forecast_dayN_data['dayPop'])
 
         # Find forecast wind information for day N.
-        result = search_for_item(cat_start,
-                                 cat_end,
-                                 fdss['wind'][0],
-                                 fdss['wind'][1],
-                                 fdss['wind'][2],
-                                 forecast_day_data, 1)
-        forecast_wind_speed, forecast_wind_direction,\
-            forecast_wind_bearing =\
-            split_wind_info(result)
-        day_dict["wind_speed"] = forecast_wind_speed
-        day_dict["wind_direction"] = forecast_wind_direction
-        day_dict["wind_bearing"] = forecast_wind_bearing
+        #   Note: New API does not provide a wind bearing in degrees
+        #     so we'll compute one.
+        temp_data = forecast_dayN_data['windSpeed']
+        if ( temp_data.isnumeric() ):
+            day_dict["wind_speed"] = int(temp_data)
+        else:
+            day_dict["wind_speed"] = 0
+        day_dict["wind_direction"] = forecast_dayN_data['windDirection']
+        day_dict["wind_bearing"] = \
+                wind_direction2degrees[day_dict['wind_direction']]
 
         forecast_list.append(day_dict)
 
@@ -423,51 +317,61 @@ def parse_forecast(forecast_day_data):
 class WralWeather:
     """WRAL object for gleaning and storing information from Web page"""
     def __init__(self, session, zipcode='27606'):
-        _LOGGER.debug("Initing wral: %s", zipcode)
+        _LOGGER.debug("Initing wral zipcode: %s", zipcode)
         if zipcode is None:
             self.zipcode = DEFAULT_ZIPCODE
         else:
             self.zipcode = zipcode
         self.client = session
-        self._get_current_url = URLS['current_pre'] + \
-            self.zipcode + URLS['current_post']
-        self._get_forecast_url = URLS['forecast_pre'] + \
-            self.zipcode + URLS['forecast_post']
+        self._get_city_url = URLS['city_search_pre'] + self.zipcode
+        self._get_weather_url = URLS['weather_pre']
         self.curr_dict = {}
         self.forecast_list = []
 
-    async def update_observation(self):
+    async def update_observation_and_forecast(self):
         """Retrieve Current Observation Web page"""
-        _LOGGER.debug("update current observation... ")
 
-        async with self.client.get(self._get_current_url) as resp:
-            _LOGGER.debug("Got current observation... Status %s", resp.status)
+        _LOGGER.debug("First query for city id ... ")
+        async with self.client.get(self._get_city_url) as resp:
             try:
                 # assert resp.status == 200
                 resp.raise_for_status()
             except ERRORS as status:
                 # except:
-                _LOGGER.debug("Failed to get Current Observation %s", status)
+                _LOGGER.debug("Failed to get City ID %s", status)
+                city_id = DEFAULT_CITYID
             finally:
-                _LOGGER.debug("Updating Current Observation..Status= %s",
+                _LOGGER.debug("Getting City ID..Status= %s",
                               resp.status)
-            curr_data = await resp.text()
-            self.curr_dict = parse_current_conditions(curr_data)
-            return curr_data
+                city_json = await resp.json()
+                _LOGGER.debug("city_json: %s", city_json)
+                city_id = city_json['data'][0]['id']
 
-    async def update_forecast(self):
-        """Retrieve 7 day Forecast Web page"""
-        _LOGGER.debug("update forecasts ... ")
+            _LOGGER.debug("city_id %s", city_id)
 
-        async with self.client.get(self._get_forecast_url) as resp:
+        _LOGGER.debug("Now query for weather... ")
+        self._get_weather_url = URLS['weather_pre'] + city_id
+        async with self.client.get(self._get_weather_url) as resp:
             try:
                 # assert resp.status == 200
                 resp.raise_for_status()
             except ERRORS as status:
-                _LOGGER.debug("Failed to get Forecast from website %s", status)
+                # except:
+                _LOGGER.debug("Failed to get Weather %s", status)
             finally:
-                _LOGGER.debug("Updating Forecast..Status= %s",
+                _LOGGER.debug("Getting Weather..Status= %s",
                               resp.status)
-            forecast_day_data = await resp.text()
-            self.forecast_list = parse_forecast(forecast_day_data)
-            return forecast_day_data
+            weather_json = await resp.json()
+            current_json = weather_json['data']['currentObservations']
+            _LOGGER.debug("========Update Current Observations======== ")
+            _LOGGER.debug("current_json: %s", current_json)
+            _LOGGER.debug("")
+
+            self.curr_dict = parse_current_conditions(current_json)
+
+            #Process 7 day Forecast
+            _LOGGER.debug("========Update Forecasts========")
+            forecast_day_json = weather_json['data']['forecast']
+            self.forecast_list = parse_forecast(forecast_day_json)
+
+            return True

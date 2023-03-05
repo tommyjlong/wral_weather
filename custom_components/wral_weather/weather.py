@@ -178,23 +178,18 @@ class WRAL_Weather(WeatherEntity):
     async def async_update(self):
         """Update Condition."""
 
-        _LOGGER.debug("Updating WRAL observation")
+        _LOGGER.debug("Updating WRAL Weather Data")
         try:
-            await self.wral.update_observation()
+            await self.wral.update_observation_and_forecast()
             _LOGGER.debug("wral Curr Dict %s", self.wral.curr_dict)
-        except ERRORS as status:
-            _LOGGER.error("Error Updating WRAL Observation")
-            self.wral.curr_dict = None
-
-        _LOGGER.debug("Updating WRAL Forecast")
-        try:
-            await self.wral.update_forecast()
             self._wral_forecast = self.wral.forecast_list
-            _LOGGER.debug("WRAL Forecast Lib List %s",
+            _LOGGER.debug("WRAL Forecast List %s",
                           self.wral.forecast_list)
         except ERRORS as status:
-            _LOGGER.error("Error Updating WRAL Forecast")
+            _LOGGER.error("Error Updating WRAL Weather Data")
+            self.wral.curr_dict = None
             self._wral_forecast = None
+
 
     @property
     def attribution(self):
@@ -286,8 +281,13 @@ class WRAL_Weather(WeatherEntity):
 
     @property
     def native_visibility(self):
-        """Return visibility (Not supported by WRAL)."""
-        return None
+        """Return visibility """
+        if self.wral.curr_dict:
+            wral_curr_visib = self.wral.curr_dict.get("current_visibility")
+            _LOGGER.debug("WRAL Curr Visibility %f", wral_curr_visib)
+            return wral_curr_visib
+        else:
+            return None
 
     @property
     def native_visibility_unit(self):
@@ -322,7 +322,7 @@ class WRAL_Weather(WeatherEntity):
             iso_day = wral_forecast_day2iso(temp_day, i)
             data[ATTR_FORECAST_TIME] = iso_day
             # _LOGGER.debug("ISO Day: %s", iso_day)
-            wral_cond = wral_forecast_entry.get("condition")
+            wral_cond = wral_forecast_entry.get("icon_condition")
             wral_ha_cond = wral2ha_condition(wral_cond)
             data[ATTR_FORECAST_CONDITION] = wral_ha_cond
 
