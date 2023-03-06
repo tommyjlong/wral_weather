@@ -271,8 +271,8 @@ class WRAL_Weather(WeatherEntity):
     def condition(self):
         """Return current condition."""
         if self.wral.curr_dict:
-            wral_cond = self.wral.curr_dict.get("current_conditions")
-            _LOGGER.debug("WRAL Curr Condition %s", wral_cond)
+            wral_cond = self.wral.curr_dict.get("current_icon_conditions")
+            _LOGGER.debug("WRAL Curr Icon Condition %s", wral_cond)
             wral_ha_cond = wral2ha_condition(wral_cond)
             _LOGGER.debug("WRAL Curr HA Condition %s", wral_ha_cond)
             return wral_ha_cond

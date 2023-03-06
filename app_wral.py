@@ -120,12 +120,12 @@ async def main():
         results = await wral.update_observation_and_forecast()
 
         curr_cond = wral.curr_dict["current_icon_conditions"]
-        print('Current WRAL Conditions:   ',
+        print('Current WRAL Condition:    ',
               wral.curr_dict["current_conditions"])
-        print('Current WRAL Conditions:   ',
+        print('Current WRAL IconCondition:',
               wral.curr_dict["current_icon_conditions"])
         curr_ha_cond = wral2ha_condition(curr_cond)
-        print('Current HA Conditions:     ', curr_ha_cond)
+        print('Current HA Condition:      ', curr_ha_cond)
         print('Current Temperature:       ',
               wral.curr_dict["current_temperature"])
         print('Current Dew Point:         ',
