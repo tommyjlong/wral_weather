@@ -182,7 +182,13 @@ def parse_current_conditions(curr_json):
     #   New API does not provide wind direction string
     #   so we'll compute one.
     #  Note: 'windDirection' is in degrees but can be None.
-    curr_dict['current_wind_speed'] =  int(curr_json['windSpeed'])
+    #  Note: 'windspeed' can be None.
+    wind_speed = curr_json['windSpeed']
+    if ( wind_speed != None):
+        curr_dict['current_wind_speed'] = int(curr_json['windSpeed'])
+    else:
+        curr_dict['current_wind_speed'] = 0
+        
     curr_dict['current_wind_direction'] = None
     wind_dir = curr_json['windDirection']
     if ( wind_dir != None):
