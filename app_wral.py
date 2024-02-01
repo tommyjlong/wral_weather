@@ -113,8 +113,18 @@ def forecast_day2iso(day, offset_from_today):
         utc_datetime_iso = pytz.utc.localize(today).isoformat()
         return utc_datetime_iso
 
+def forecast_hour2iso(hour):
+    """
+       Convert WRAL forecast hour string to time in UTC ISO format.
+       This is for use with HA.
+    """
+    tz = datetime.now().astimezone().tzinfo
+    return datetime.fromtimestamp(hour, tz).isoformat()
 
 async def main():
+# Reference for Apparent Temperature:
+# https://digital.weather.gov/staticpages/definitions.php
+
     async with aiohttp.ClientSession() as client:
         wral = WralWeather(client, zipcode=ZIPCODE)
         results = await wral.update_observation_and_forecast()
@@ -136,6 +146,8 @@ async def main():
               wral.curr_dict["current_wind_direction"])
         print('Current Wind Speed:        ',
               wral.curr_dict["current_wind_speed"])
+        print('Current Wind Gusts:        ',
+              wral.curr_dict["current_wind_gusts"])
         print('Current Wind Bearing:      ',
               wral.curr_dict["current_wind_bearing"])
         print('Current Wind Chill:        ',
@@ -146,16 +158,20 @@ async def main():
               wral.curr_dict["current_pressure"])
         print('Current Visibility:        ',
               wral.curr_dict["current_visibility"])
+        print('Current Hourly Precip:     ',
+              wral.curr_dict["current_hourly_precip"])
         _LOGGER.debug("Current Dictionary: %s", wral.curr_dict)
         print('')
 
         i = 0
-        for todays_forecast in wral.forecast_list:
+        for todays_forecast in wral.forecast_daily_list:
             _LOGGER.debug("Today's Forecast %s ", todays_forecast)
             print("Day  ", i, "  Which Day      ",
                   todays_forecast["which_day"])
-            iso_day = forecast_day2iso(todays_forecast["which_day"], i)
-            _LOGGER.debug("Day %i Which ISO Day %s ", i, iso_day)
+           #iso_day = forecast_day2iso(todays_forecast["which_day"], i)
+           #_LOGGER.debug("Day %i Which ISO Day %s ", i, iso_day)
+            print("Day  ", i, "  Datetime       ", 
+                 todays_forecast["which_day_dt"])
             print("Day  ", i, "  Condition      ",
                   todays_forecast["condition"])
             print("Day  ", i, "  Icon Condition ",
@@ -179,8 +195,60 @@ async def main():
                   todays_forecast["wind_speed"])
             print("Day  ", i, "  Wind Bearing   ",
                   todays_forecast["wind_bearing"])
+            print("Day  ", i, "  Heat Index     ",
+                  todays_forecast["heat_index"])
+            print("Day  ", i, "  Wind Chill     ",
+                  todays_forecast["wind_chill"])
+            print("Day  ", i, "  Dew Point      ",
+                  todays_forecast["dew_point"])
             print("Day  ", i, "  Details:       ")
             print(" -", todays_forecast["detailed_description"])
+            print("")
+            i = i + 1
+
+        i = 0
+        for hours_forecast in wral.forecast_hourly_list:
+            _LOGGER.debug("Today's Hourly Forecast %s ", hours_forecast)
+            print("Hour ", i, "  Which Hour DT  ",
+                  hours_forecast["which_hour_dt"])
+            print("Hour ", i, "  Condition      ",
+                  hours_forecast["condition"])
+            print("Hour ", i, "  Icon Condition ",
+                  hours_forecast["icon_condition"])
+            forecast_cond = hours_forecast["icon_condition"]
+            forecast_ha_cond = wral2ha_condition(forecast_cond)
+            print("Hour ", i, "  HA Condition   ", forecast_ha_cond)
+            print("Hour ", i, "  Temperature    ",
+                  hours_forecast["temperature"])
+            print("Hour ", i, "  Precip Prob    ",
+                  hours_forecast["precipitation"])
+            print("Hour ", i, "  Wind Direction ",
+                  hours_forecast["wind_direction"])
+            print("Hour ", i, "  Wind Speed     ",
+                  hours_forecast["wind_speed"])
+            print("Hour ", i, "  Wind Bearing   ",
+                  hours_forecast["wind_bearing"])
+            print("Hour ", i, "  Humidity       ",
+                  hours_forecast["humidity"])
+            print("Hour ", i, "  Dew Point      ",
+                  hours_forecast["dew_point"])
+            print("Hour ", i, "  Heat Index     ",
+                  hours_forecast["heat_index"])
+            print("Hour ", i, "  Wind Chill     ",
+                  hours_forecast["wind_chill"])
+            print("Hour ", i, "  Cloud Cover    ",
+                  hours_forecast["cloud_cover"])
+
+            #Compute Apparent Temperature            
+            if hours_forecast["temperature"] <= 50:
+                apparent_temp = hours_forecast["wind_chill"]
+            elif hours_forecast["temperature"] > 80:
+                apparent_temp = hours_forecast["heat_index"]
+            else:
+                apparent_temp = hours_forecast["temperature"]
+            print("Hour ", i, "  Apparent Temp  ",
+                   apparent_temp)
+
             print("")
             i = i + 1
 
