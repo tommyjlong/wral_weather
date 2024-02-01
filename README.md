@@ -18,18 +18,23 @@ tommyjlong/wral_weather** should be created under CUSTOM REPOSITORY.
 ### Manual Installation
 * If you want to manually install, place the files located in the `custom_components/wral_weather/` folder into the `<path-to-haconfig>/custom_components/wral_weather/` directory.  Reboot HA.
 
-## Detailed Configuration
-Under Home Assistant's weather integration, specify the ```wral_weather ``` platform and provide your local zipcode.
-```
-weather:
-  - platform: wral_weather
-    name: "WRAL Weather"
-    zipcode: 'YOUR_ZIPCODE'
+## Configuration
+### Integration Configuration
+:warning: If you are already using this integration and running versions v0.2.2 or older, you will need to delete the wral weather configuration from `configuration.yaml`, and restart HA. Then proceed to install this newer integration as it uses the newer "config flow" install method but there is no code to migrate the data from the legacy YAML configuration. :warning:
 
-```
-* ```name``` is optional.  It is used as the name of the entity as well as the Friendly name.  By default the name is "WRAL Weather".
-Using the default name, the entity will show up as: ```weather.wral_weather```
-* ```zipcode``` is optional.  However it is highly recommended to use your zipcode.  By default, it uses the zipcode where the WRAL TV studio is located.
+Under Home Assistant's Integration page, choose + ADD Integrations, and click on the integration named "WRAL Weather".
+A dialog box will pop up for you to configure.  
+* Weather Entity Name: This is the name of the HA weather entity that gets created. It is recommended you leave the default name "WRAL Weather" as is, as this will create an entity `weather.wral_weather`.
+* Zipcode: You should configure the zipcode for your area. By default, it uses the zipcode `27606` where the WRAL TV studio is located.
+* Hours Forecast - Number of Hours:  WRAL provides nearly seven days worth of hourly forecasts. If you desire to see WRAL hourly forecasts, but don't need to see all of these, then configure this with a more reasonable limit.  Default is 24 hours.
+Hit "SUBMIT".  Another pop up will show you that a device has been created and allow you to choose an HA Area if you desire.  Then hit "FINISH".
+
+Note: That you can add another instance of the WRAL Integration by going to the HA Integration page, choosing the existing WRAL Integration, and click on "ADD ENTRY".  This time give it a different name for each additional instance.
+
+## Sensor Enable
+The WRAL Weather Integration also provides a variety of sensors that use the WRAL Weather data.  They are partially named in Home Assistant based on the zipcode configured earlier, for example `sensor.27606_xxxx`. By default all the sensors are disabled.  To enable one or more of them, go to the HA "Integration" page and click on the WRAL Integration and look where is shows "13 entities" and click on it.
+
+A new page will appear showing all the sensors entities (as well as the one weather entity).  To enable a sensor(s), click on the box next to the sensor(s).  Then click on "ENABLE SELECTED".  A pop up will ask you to confirm, click on "ENABLE".  An pop up will now mention that it may take up to 30 seconds for HA to create the sensors and supply it with data, click "OK".
 
 ## Lovelace Support
 This custom weather platform works with standard HA weather-forecast card:
@@ -38,16 +43,14 @@ cards:
   - type: weather-forecast
     entity: weather.wral_weather
 ```
-It also works with the custom animated [wral-weather-card](https://github.com/tommyjlong/wral-weather-card).
+It also works with the custom animated [wral-weather-card](https://github.com/tommyjlong/wral-weather-card). :warning: Older versions of this card will need to be upgraded. :warning: 
 
 ## Credits
-The development of this Custom Component may not have been possible without
-having analyzed various existing code, and in particular the nws weather and pynws developed by 
-MatthewFlam (https://github.com/MatthewFlamm).
+The development of this Custom HA integration would not have been possible without having analyzed and reused various existing code, and in particular the modernized version of the nws weather integrations provided by HA as well as the `pynws` module developed by MatthewFlam (https://github.com/MatthewFlamm).
 
 ## Miscellaneous
-The code is made up of two separate Python modules: 
-- ```wral_weather.py``` : which interfaces directly with WRAL's weather website.
-- ```weather.py``` : which provides the WRAL platform for HA's weather integration.  It gets its data from ```wral_weather.py```.
+The code is made up of various Python modules: 
+- `wral_weather.py` : which interfaces directly with WRAL's weather website.
+- The remaining Python and json files provides the WRAL weather platform and sensors for HA's weather integration.  
 
-A companion Python application program ```app_wral.py``` was developed as a test and development vehicle for the ```wral_weather.py```.  If you would like to play with it, simply place it and the ```wral_weather.py``` in the same directory and run it: ```$python3 app_wral.py```.
+A companion Python application program ```app_wral.py``` was developed as a test and development vehicle for the `wral_weather.py`.  If you would like to play with it, simply place it and the `wral_weather.py` in the same directory and run it: ```$python3 app_wral.py```.
