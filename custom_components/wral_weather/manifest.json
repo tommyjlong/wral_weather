@@ -1,11 +1,12 @@
 {
     "domain": "wral_weather",
     "name": "WRAL Weather",
-    "version": "0.2.1",
+    "version": "2.0.0",
+    "codeowners": ["@tommyjlong"],
+    "config_flow": true,
     "documentation": "https://github.com/tommyjlong/wral-weather/blob/master/README.md",
     "issue_tracker": "https://github.com/tommyjlong/wral_weather/issues",
-    "dependencies": [],
-    "codeowners": ["@tommyjlong"],
-    "requirements": [],
     "iot_class": "cloud_polling"
+    "dependencies": [],
+    "requirements": [],
 }

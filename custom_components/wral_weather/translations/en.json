@@ -1,0 +1,22 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Service is already configured"
+        },
+        "error": {
+            "cannot_connect": "Failed to connect",
+            "unknown": "Unexpected error"
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "name": "Weather Entity Name",
+                    "zipcode": "Zip Code",
+                    "num_hrs": "Hours Forecast - Number of Hours" 
+                },
+                "description": "If a Zip Code is not specified, then the Raleigh Zip Code 27606 will be used",
+                "title": "Setup the WRAL Weather Integration"
+            }
+        }
+    }
+}
