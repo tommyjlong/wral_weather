@@ -47,7 +47,7 @@ async def validate_input(
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for ABC Weather Service (AWS)."""
+    """Handle a config flow for WRAL Weather."""
 
     VERSION = 1
 

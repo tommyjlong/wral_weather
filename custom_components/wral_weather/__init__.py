@@ -224,15 +224,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 
-#def device_info(latitude: float, longitude: float, zipcode: int) -> DeviceInfo:
 def device_info(zipcode: int) -> DeviceInfo:
     """Return device registry information."""
     return DeviceInfo(
         entry_type=DeviceEntryType.SERVICE,
-       #identifiers={(DOMAIN, base_unique_id(latitude, longitude))},
-       #identifiers={(DOMAIN, base_unique_id(latitude, longitude, zipcode))},
         identifiers={(DOMAIN, base_unique_id(zipcode))},
-        manufacturer="ABC Weather Service",
-       #name=f"ABC WS: {latitude}, {longitude}",
-        name=f"ABC WS: {zipcode}",
+        manufacturer="WRAL Weather Device",
+        name=f"WRAL Weather: {zipcode}",
     )

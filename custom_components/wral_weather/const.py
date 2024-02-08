@@ -20,9 +20,8 @@ from homeassistant.components.weather import (
     ATTR_CONDITION_WINDY_VARIANT,
 )
 
-DOMAIN = "abc_weather"
+DOMAIN = "wral_weather"
 
-CONF_STATION = "station" # tjl to be removed
 CONF_ZIPCODE = "zipcode" # tjl adder
 CONF_NUM_HRS = "num_hrs" # tjl adder
 
