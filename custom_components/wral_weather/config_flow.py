@@ -15,7 +15,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from . import base_unique_id
-from .const import CONF_STATION, DOMAIN, CONF_ZIPCODE, CONF_NUM_HRS
+from .const import  DOMAIN, CONF_ZIPCODE, CONF_NUM_HRS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +30,6 @@ async def validate_input(
    #latitude = data[CONF_LATITUDE]
    #longitude = data[CONF_LONGITUDE]
    #api_key = data[CONF_API_KEY]
-   #station = data.get(CONF_STATION)
     name = data.get(CONF_NAME)
     zipcode = data.get(CONF_ZIPCODE)
     num_hrs = data.get(CONF_NUM_HRS)
@@ -70,7 +69,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
             try:
                 info = await validate_input(self.hass, user_input)
-               #user_input[CONF_STATION] = info["title"]
                 return self.async_create_entry(title=info["title"], data=user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
@@ -87,7 +85,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                #vol.Required(
                #    CONF_LONGITUDE, default=self.hass.config.longitude
                #): cv.longitude,
-               #vol.Optional(CONF_STATION): str,
                 vol.Optional(CONF_NAME, default="WRAL Weather"): str,
                 vol.Optional(CONF_ZIPCODE, default="27606"): str,
                 vol.Optional(CONF_NUM_HRS, default="24"): str,

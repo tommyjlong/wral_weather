@@ -37,10 +37,8 @@ from homeassistant.util.unit_conversion import (
 from homeassistant.util.unit_system import US_CUSTOMARY_SYSTEM
 
 from . import WRALData, WralDataUpdateCoordinator, base_unique_id, device_info
-#from .const import ATTRIBUTION, CONF_STATION, DOMAIN, OBSERVATION_VALID_TIME
 from .const import (
     ATTRIBUTION, 
-    CONF_STATION, 
     DOMAIN, 
     OBSERVATION_VALID_TIME,
     CONF_ZIPCODE  #TJL Adder
@@ -203,7 +201,6 @@ async def async_setup_entry(
 ) -> None:
     """Set up the WRAL weather platform."""
     wral_data: WRALData = hass.data[DOMAIN][entry.entry_id]
-   #station = entry.data[CONF_STATION]
     zipcode = entry.data[CONF_ZIPCODE] #TJL Change
 
     async_add_entities(

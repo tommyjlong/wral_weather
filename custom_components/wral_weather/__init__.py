@@ -20,7 +20,7 @@ from homeassistant.helpers.event import async_track_point_in_utc_time
 from homeassistant.helpers.update_coordinator import TimestampDataUpdateCoordinator
 from homeassistant.util.dt import utcnow
 
-from .const import CONF_STATION, DOMAIN, UPDATE_TIME_PERIOD, CONF_ZIPCODE
+from .const import  DOMAIN, UPDATE_TIME_PERIOD, CONF_ZIPCODE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -106,10 +106,6 @@ class WralDataUpdateCoordinator(TimestampDataUpdateCoordinator[None]):
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a National Weather Service entry."""
-   #latitude = entry.data[CONF_LATITUDE]
-   #longitude = entry.data[CONF_LONGITUDE]
-   #api_key = entry.data[CONF_API_KEY]
-   #station = entry.data[CONF_STATION]
 
     client_session = async_get_clientsession(hass)
 
