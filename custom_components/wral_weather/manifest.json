@@ -8,5 +8,5 @@
     "issue_tracker": "https://github.com/tommyjlong/wral_weather/issues",
     "iot_class": "cloud_polling",
     "dependencies": [],
-    "requirements": [],
+    "requirements": []
 }
