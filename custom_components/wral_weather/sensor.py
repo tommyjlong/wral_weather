@@ -193,6 +193,22 @@ SENSOR_TYPES: tuple[WRALSensorEntityDescription, ...] = (
         unit_convert=PERCENTAGE,
         which_dict=FORECAST_DICT_0,  #TJL Adder
     ),
+    WRALSensorEntityDescription(  #TJL ADDER
+        key="high_temperature",
+        name="Todays High Temperature",
+        icon="mdi:thermometer",
+        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
+        unit_convert=UnitOfTemperature.FAHRENHEIT,
+        which_dict=FORECAST_DICT_0,  #TJL Adder
+    ),
+    WRALSensorEntityDescription(  #TJL ADDER
+        key="low_temperature",
+        name="Tonights Low Temperature",
+        icon="mdi:thermometer",
+        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
+        unit_convert=UnitOfTemperature.FAHRENHEIT,
+        which_dict=FORECAST_DICT_0,  #TJL Adder
+    ),
 )
 
 
