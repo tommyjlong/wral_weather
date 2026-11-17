@@ -109,11 +109,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     client_session = async_get_clientsession(hass)
 
+   #v2 API now support latitude and longitude.  
+   #  Use HA's Home coordinates.
+   #latitude = 35.7796
+   #longitude = -78.6382
+    latitude = hass.config.latitude
+    longitude = hass.config.longitude
+
     #setup WRAL
     zipcode = entry.data[CONF_ZIPCODE]
-    _LOGGER.debug("Setting up WRAL Service. Zipcode: %s", zipcode)
+    _LOGGER.debug("Setting up WRAL Service. Latitude: %f, longitude: %f, \
+                  Zipcode: %s", latitude, longitude, zipcode)
     wral_session = async_get_clientsession(hass)
-    wral_inst = WralWeather(wral_session, zipcode)
+    wral_inst = WralWeather(wral_session, latitude, longitude, zipcode)
 
     async def update_observation() -> None:
         """Retrieve recent observations."""

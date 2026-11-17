@@ -92,13 +92,16 @@ WRAL_CONDITION_CLASSES = {
                 "night-chance-rain-showers",
                 "drizzle", "day-chance-drizzle", "night-chance-drizzle"],
       "windy-variant": [],
-      "windy": ["windy"],
+      "windy": ["windy", "wind"],
       "fog": ["misc-fog"],
       "clear": ["day-clear", "night-clear",
-                "day-dry", "night-dry"],
+                "clear-day", "clear-night",
+                "day-dry", "night-dry"
+               ],
       "cloudy": ["cloudy", "day-mostly-cloudy", "night-mostly-cloudy"],
       "partlycloudy": ["day-mostly-clear", "night-mostly-clear",
-                       "day-partly-cloudy", "night-partly-cloudy"
+                       "day-partly-cloudy", "night-partly-cloudy",
+                       "partly-cloudy-day", "partly-cloudy-night", 
                        "day-haze", "night-haze",
                        "day-dust", "night-dust"],
     }
@@ -109,9 +112,15 @@ def wral2ha_condition(wral_cond):
     Convert WRAL Condition (current or forecast)
     to HA hui-weather-forecast-card weatherIcons.
     """
+    found_cond = False
     for key, value in WRAL_CONDITION_CLASSES.items():
         if wral_cond in value:
+            found_cond = True
             break
+
+    if not found_cond:
+        _LOGGER.warning("WRAL unknown condition: %s",wral_cond) #TJL Adder
+
     found = wral_cond.find("night")
     if found != -1:
         time = "night"
@@ -375,7 +384,8 @@ class WRALWeather(CoordinatorWeatherEntity):
     def condition(self) -> str | None:
         """Return current condition."""
         if self.wral.curr_dict:
-            wral_cond = self.wral.curr_dict.get("current_icon_conditions")
+           #wral_cond = self.wral.curr_dict.get("current_icon_conditions")
+            wral_cond = self.wral.curr_dict.get("current_conditions")
             _LOGGER.debug("WRAL Curr Icon Condition %s", wral_cond)
             wral_ha_cond = wral2ha_condition(wral_cond)
             _LOGGER.debug("WRAL Curr HA Condition %s", wral_ha_cond)
@@ -436,7 +446,8 @@ class WRALWeather(CoordinatorWeatherEntity):
                 iso_day = forecast_entry.get("which_day_dt")
                 data[ATTR_FORECAST_TIME] = iso_day
                 # _LOGGER.debug("ISO Day: %s", iso_day)
-                wral_cond = forecast_entry.get("icon_condition")
+               #wral_cond = forecast_entry.get("icon_condition")
+                wral_cond = forecast_entry.get("condition")
                 wral_ha_cond = wral2ha_condition(wral_cond)
                 data[ATTR_FORECAST_CONDITION] = wral_ha_cond
 
@@ -470,7 +481,8 @@ class WRALWeather(CoordinatorWeatherEntity):
                 }
 
                 #Convert condition to HA condition
-                wral_cond = forecast_entry.get("icon_condition")
+               #wral_cond = forecast_entry.get("icon_condition")
+                wral_cond = forecast_entry.get("condition")
                 wral_ha_cond = wral2ha_condition(wral_cond)
                 data[ATTR_FORECAST_CONDITION] = wral_ha_cond
 

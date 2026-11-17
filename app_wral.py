@@ -6,7 +6,19 @@ import logging
 import sys
 from wral_weather import WralWeather
 
-ZIPCODE = '27513'
+#Use same zipcode that WRAL weather website used for v1 API
+ZIPCODE = '27606'
+
+#Use some test GPS coordinates 
+#  Also test for incomplete or no lat/long
+LATITUDE_RDU = 35.7796
+LONGITUDE_RDU = -78.6382
+LATITUDE_TEST_HA = 35.78965555286147 
+LONGITUDE_TEST_HA = -78.84479999542238
+LATITUDE_NONE = None
+LONGITUDE_NONE = None
+LATITUDE = LATITUDE_NONE
+LONGITUDE = LONGITUDE_NONE
 
 # Setup Logger for wral_weather.
 #   Use the same Logger for this app.
@@ -50,13 +62,18 @@ WRAL_CONDITION_CLASSES = {
                 "night-chance-rain-showers",
                 "drizzle", "day-chance-drizzle", "night-chance-drizzle"],
       "windy-variant": [],
-      "windy": ["windy"],
+      "windy": ["windy", 
+                "wind" #v2 API
+               ],
       "fog": ["misc-fog"],
       "clear": ["day-clear", "night-clear",
-                "day-dry", "night-dry"],
+                "clear-day", "clear-night",  #v2 API
+                "day-dry", "night-dry"
+               ],
       "cloudy": ["cloudy", "day-mostly-cloudy", "night-mostly-cloudy"],
       "partlycloudy": ["day-mostly-clear", "night-mostly-clear",
-                       "day-partly-cloudy", "night-partly-cloudy"
+                       "day-partly-cloudy", "night-partly-cloudy",
+                       "partly-cloudy-day", "partly-cloudy-night", #v2 API
                        "day-haze", "night-haze",
                        "day-dust", "night-dust"],
     }
@@ -67,9 +84,15 @@ def wral2ha_condition(wral_cond):
     Convert WRAL Condition (current or forecast) to
     HA hui-weather-forecast-card weatherIcons.
     """
+    found_cond = False
     for key, value in WRAL_CONDITION_CLASSES.items():
         if wral_cond in value:
+            found_cond = True
             break
+
+    if not found_cond:
+        _LOGGER.warning("WRAL unknown condition: %s",wral_cond)
+
     found = wral_cond.find("night")
     if found != -1:
         time = "night"
@@ -126,14 +149,16 @@ async def main():
 # https://digital.weather.gov/staticpages/definitions.php
 
     async with aiohttp.ClientSession() as client:
-        wral = WralWeather(client, zipcode=ZIPCODE)
+#       wral = WralWeather(client, zipcode=ZIPCODE, latitude=LATITUDE, longitude=LONGITUDE)
+        wral = WralWeather(client, latitude=LATITUDE, longitude=LONGITUDE, zipcode=ZIPCODE)
         results = await wral.update_observation_and_forecast()
 
-        curr_cond = wral.curr_dict["current_icon_conditions"]
+#       curr_cond = wral.curr_dict["current_icon_conditions"]
+        curr_cond = wral.curr_dict["current_conditions"]
         print('Current WRAL Condition:    ',
               wral.curr_dict["current_conditions"])
-        print('Current WRAL IconCondition:',
-              wral.curr_dict["current_icon_conditions"])
+        print('Current WRAL LabelCondition:',
+              wral.curr_dict["current_label_conditions"])
         curr_ha_cond = wral2ha_condition(curr_cond)
         print('Current HA Condition:      ', curr_ha_cond)
         print('Current Temperature:       ',
@@ -144,12 +169,14 @@ async def main():
               wral.curr_dict["current_relative_humidity"])
         print('Current Wind Direction:    ',
               wral.curr_dict["current_wind_direction"])
+        print('Current Wind Bearing:      ',
+              wral.curr_dict["current_wind_bearing"])
+        print('Current Wind Cardinal:     ',
+              wral.curr_dict["current_wind_cardinal"])
         print('Current Wind Speed:        ',
               wral.curr_dict["current_wind_speed"])
         print('Current Wind Gusts:        ',
               wral.curr_dict["current_wind_gusts"])
-        print('Current Wind Bearing:      ',
-              wral.curr_dict["current_wind_bearing"])
         print('Current Wind Chill:        ',
               wral.curr_dict["current_wind_chill"])
         print('Current Heat Index:        ',
@@ -174,9 +201,11 @@ async def main():
                  todays_forecast["which_day_dt"])
             print("Day  ", i, "  Condition      ",
                   todays_forecast["condition"])
-            print("Day  ", i, "  Icon Condition ",
-                  todays_forecast["icon_condition"])
-            forecast_cond = todays_forecast["icon_condition"]
+            print("Day  ", i, "  Code Condition ",
+                  todays_forecast["condition_code"])
+            print("Day  ", i, "  Label Condition",
+                  todays_forecast["condition_label"])
+            forecast_cond = todays_forecast["condition"]
             forecast_ha_cond = wral2ha_condition(forecast_cond)
             print("Day  ", i, "  HA Condition   ", forecast_ha_cond)
             print("Day  ", i, "  High Temp      ",
@@ -189,12 +218,16 @@ async def main():
                   todays_forecast["sunset"])
             print("Day  ", i, "  Precip Prob    ",
                   todays_forecast["precipitation"])
-            print("Day  ", i, "  Wind Direction ",
-                  todays_forecast["wind_direction"])
             print("Day  ", i, "  Wind Speed     ",
                   todays_forecast["wind_speed"])
+            print("Day  ", i, "  Wind Direction ",
+                  todays_forecast["wind_direction"])
             print("Day  ", i, "  Wind Bearing   ",
                   todays_forecast["wind_bearing"])
+            print("Day  ", i, "  Wind Cardinal  ",
+                  todays_forecast["wind_cardinal"])
+            print("Day  ", i, "  Humidity       ",
+                  todays_forecast["relative_humidity"])
             print("Day  ", i, "  Heat Index     ",
                   todays_forecast["heat_index"])
             print("Day  ", i, "  Wind Chill     ",
@@ -213,21 +246,25 @@ async def main():
                   hours_forecast["which_hour_dt"])
             print("Hour ", i, "  Condition      ",
                   hours_forecast["condition"])
-            print("Hour ", i, "  Icon Condition ",
-                  hours_forecast["icon_condition"])
-            forecast_cond = hours_forecast["icon_condition"]
+            print("Hour ", i, "  Code Condition ",
+                  hours_forecast["condition_code"])
+            print("Hour ", i, "  Label Condition ",
+                  hours_forecast["condition_label"])
+            forecast_cond = hours_forecast["condition"]
             forecast_ha_cond = wral2ha_condition(forecast_cond)
             print("Hour ", i, "  HA Condition   ", forecast_ha_cond)
             print("Hour ", i, "  Temperature    ",
                   hours_forecast["temperature"])
             print("Hour ", i, "  Precip Prob    ",
                   hours_forecast["precipitation"])
-            print("Hour ", i, "  Wind Direction ",
-                  hours_forecast["wind_direction"])
             print("Hour ", i, "  Wind Speed     ",
                   hours_forecast["wind_speed"])
+            print("Hour ", i, "  Wind Direction ",
+                  hours_forecast["wind_direction"])
             print("Hour ", i, "  Wind Bearing   ",
                   hours_forecast["wind_bearing"])
+            print("Hour ", i, "  Wind Cardinal  ",
+                  hours_forecast["wind_cardinal"])
             print("Hour ", i, "  Humidity       ",
                   hours_forecast["humidity"])
             print("Hour ", i, "  Dew Point      ",
@@ -253,7 +290,7 @@ async def main():
             i = i + 1
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
-
+   #loop = asyncio.get_event_loop()
+   #loop.run_until_complete(main())
+    asyncio.run(main())
 _LOGGER.debug("Finished Running App")
