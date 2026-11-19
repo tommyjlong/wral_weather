@@ -90,7 +90,10 @@ WRAL_CONDITION_CLASSES = {
       "rainy": ["rain", "day-chance-rain", "night-chance-rain",
                 "rain-showers", "day-chance-rain-showers",
                 "night-chance-rain-showers",
-                "drizzle", "day-chance-drizzle", "night-chance-drizzle"],
+                "night-chance-rain-showers",
+                "showers", #v2 API
+                "drizzle", "day-chance-drizzle", "night-chance-drizzle"
+                ],
       "windy-variant": [],
       "windy": ["windy", "wind"],
       "fog": ["misc-fog"],
