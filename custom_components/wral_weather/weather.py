@@ -96,7 +96,7 @@ WRAL_CONDITION_CLASSES = {
                 ],
       "windy-variant": [],
       "windy": ["windy", "wind"],
-      "fog": ["misc-fog"],
+      "fog": ["misc-fog", "fog"],
       "clear": ["day-clear", "night-clear",
                 "clear-day", "clear-night",
                 "day-dry", "night-dry"
